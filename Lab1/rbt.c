@@ -14,6 +14,14 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/time.h> // Для измерения времени работы. 
+
+double wtime()
+{
+    struct timeval t;
+    gettimeofday(&t, NULL);
+    return (double)t.tv_sec + (double)t.tv_usec * 1E-6;
+}
 
 #define COLOR_RED 0
 #define COLOR_BLACK 1
@@ -42,6 +50,9 @@ int main(int argc, char **argv){
 	
 	struct rbtree *tree = NULL;
 	
+	double t;
+
+    t = wtime();// Измерим время
 	tree = rbtree_add(tree, 10, "10");
 	tree = rbtree_add(tree, 5, "5");
 	tree = rbtree_add(tree, 3, "3");
@@ -52,6 +63,9 @@ int main(int argc, char **argv){
 	tree = rbtree_add(tree, 9, "9");
 	//rbtree_print(tree);
 	//rbtree_free(tree);
+	t = wtime() - t;
+
+    printf("Elapsed time: %.6f sec.\n", t);
 	
 	return 0;
 }
@@ -102,60 +116,66 @@ struct rbtree *rbtree_add(struct rbtree *root, int key, char *value) {
 
 // Востановление свойств красно-черного дерева  
 // после добавления нового узла
+// На вход получаем два дерева. Изначальное и новое. 
 struct rbtree *rbtree_fixup_add(struct rbtree *root, struct rbtree *node) {
 
+	// Создаем дерево для хранения
+	// дяди. 
 	struct rbtree *uncle;
-	/* Current node is RED */
+	// Если родительский узел красный
 	while (node != root && node->parent->color == COLOR_RED) {
+		// Если родительский элемент текущего 
+		// находится слева от дедушки
 		if (node->parent == node->parent->parent->left) {
 
-			/* Node in left tree of grandfather */
+			// Получаем узел "Дядя"
 			uncle = node->parent->parent->right;
-
+			
+			// Случай 1 - Если дядя красный 
+			// В 1 случае необходимо сменить цвет предков
 			if (uncle->color == COLOR_RED) {
-				/* Case 1 - uncle is RED */
-				node->parent->color = COLOR_BLACK;
-				uncle->color = COLOR_BLACK;
-				node->parent->parent->color = COLOR_RED;
+				
+				// Меняем цвет отца и дяди на черный
+				node->parent->color = COLOR_BLACK; 		// родительский
+				uncle->color = COLOR_BLACK;				// Дядин
+				node->parent->parent->color = COLOR_RED;// дедушки
 				node = node->parent->parent;
-			} else {
-				/* Cases 2 & 3 - uncle is BLACK */
+			} else { // Случай 2 и 3 - Если Дядя черный
+				// Если текущее дерево справа от родительского
 				if (node == node->parent->right) {
-					/* Reduce case 2 to case 3 */
-					node = node->parent;
+					// Сменить случай со 2 на 3. 
+					// Текущий узел становится родителем.
+					// Родительский становится левым дочерним.
+					node = node->parent; // Происзводим левый поворот.
 					root = rbtree_left_rotate(root, node);
 				}
-				/* Case 3 */
+				// Случай 3 - текущий 
 				node->parent->color = COLOR_BLACK;
 				node->parent->parent->color = COLOR_RED;
-				root = rbtree_right_rotate(root,
-				node->parent->parent);
+				// Правый поворот. 
+				root = rbtree_right_rotate(root,node->parent->parent);
 			}
-		} else {
-/*
-* Node in right tree of grandfather
-*
-* Cases 4, 5, 6 - node in right tree
-* of grandfather
-*/
+		} else { // Если родительский элемент текущего
+				 // находится справа от дедушки
 			uncle = node->parent->parent->left;
 			if (uncle->color == COLOR_RED) {
-				/* Uncle is RED – case 4 */
+				// Случай 4 - Дядя - красный
+				// Меняемм цвета дяди, отца и деда.
 				node->parent->color = COLOR_BLACK;
 				uncle->color = COLOR_BLACK;
 				node->parent->parent->color = COLOR_RED;
 				node = node->parent->parent;
 			} else {
-			/* Uncle is BLACK */ 
-			if (node == node->parent->left) {
+			// Дядя - черынй
+			if (node == node->parent->left) { // Случай 5
 				node = node->parent;
+				// Правый поворот - Случай 5 превращаем в 6
 				root = rbtree_right_rotate(root, node);
 			}
-		
+			// Случай 6 - Меняем цвета и делаем левый поворот
 			node->parent->color = COLOR_BLACK;
 			node->parent->parent->color = COLOR_RED;
-			root = rbtree_left_rotate(root,
-			node->parent->parent);
+			root = rbtree_left_rotate(root, node->parent->parent);
 			}
 		}
 	}
