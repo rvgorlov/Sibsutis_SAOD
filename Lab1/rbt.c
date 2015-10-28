@@ -16,12 +16,7 @@
 #include <string.h>
 #include <sys/time.h> // Для измерения времени работы. 
 
-double wtime()
-{
-    struct timeval t;
-    gettimeofday(&t, NULL);
-    return (double)t.tv_sec + (double)t.tv_usec * 1E-6;
-}
+double wtime();
 
 #define COLOR_RED 0
 #define COLOR_BLACK 1
@@ -40,6 +35,12 @@ struct rbtree EmptyNode = {0, 0, COLOR_BLACK, NULL, NULL, NULL};
 struct rbtree *NullNode = &EmptyNode;
 
 struct rbtree *rbtree_add(struct rbtree *root, int key, char *value);
+struct rbtree *rbtree_min(struct rbtree *root);
+struct rbtree *rbtree_max(struct rbtree *root);
+struct rbtree *rbtree_delete(struct rbtree *root, int key); 
+struct rbtree *rbtree_lookup(struct rbtree *root, int key); 
+void rbtree_print_dfs(struct rbtree *root, int level);
+void rbtree_free(struct rbtree *root);  
 
 // Функции для востановления свойств К-Ч деревьев
 struct rbtree *rbtree_fixup_add(struct rbtree *root, struct rbtree *node);
@@ -49,9 +50,10 @@ struct rbtree *rbtree_right_rotate(struct rbtree *root, struct rbtree *node);
 int main(int argc, char **argv){
 	
 	struct rbtree *tree = NULL;
+	struct rbtree *temp = NULL;
 	
 	double t;
-
+	printf("Добавляем в дерево узлы\n\n");
     t = wtime();// Измерим время
 	tree = rbtree_add(tree, 10, "10");
 	tree = rbtree_add(tree, 5, "5");
@@ -61,23 +63,64 @@ int main(int argc, char **argv){
 	tree = rbtree_add(tree, 6, "6");
 	tree = rbtree_add(tree, 8, "8");
 	tree = rbtree_add(tree, 9, "9");
+	tree = rbtree_add(tree, 100, "100");
+	tree = rbtree_add(tree, -101, "-101");
+	tree = rbtree_add(tree, 2, "2");
+	tree = rbtree_add(tree, 7, "7");
+	tree = rbtree_add(tree, -2, "-2");
+	tree = rbtree_add(tree, -20, "-20");
+	
+	printf("Тестируем поиск минимума и максимума\n\n");
+	temp = rbtree_min(tree); 
+	printf("Минимальный узел имеет ключ: %d \n", temp->key);
+	temp = rbtree_max(tree); 
+	printf("Максимальный узел имеет ключ: %d \n", temp->key);
+	printf("Корневой узел имеет ключ: %d \n", tree->key);
+	
+	printf("\nУдалим узел с ключем 100\n");
+	tree = rbtree_delete(tree, 100); 
+	
+	printf("\nТестируем поиск элемента с ключем 5 \n");
+	temp = rbtree_lookup(tree, 5); 
+	if (temp == NullNode)
+		printf("Искомого узла нет в дереве");
+	else if (temp->color == COLOR_RED) 
+		printf("Искомый элемент найден, он красный");
+	else printf("Искомый элемент найден, он черный");
+	
+	printf("\nТестируем поиск элемента с ключем 120 \n");
+	temp = rbtree_lookup(tree, 120); 
+	if (temp == NullNode)
+		printf("Искомого узла нет в дереве");
+	else if (temp->color == COLOR_RED) 
+		printf("Искомый элемент найден, он красный");
+	else printf("Искомый элемент найден, он черный");
+	
+	rbtree_print_dfs(tree, 0); 
+	
+	printf("\n\nУдалим дерево полностью\n");
+	rbtree_free(tree); 
 	//rbtree_print(tree);
-	//rbtree_free(tree);
 	t = wtime() - t;
 
-    printf("Elapsed time: %.6f sec.\n", t);
+    printf("Время работы алгоритма: %.6f секунды.\n", t);
 	
 	return 0;
 }
 
+double wtime()
+{
+    struct timeval t;
+    gettimeofday(&t, NULL);
+    return (double)t.tv_sec + (double)t.tv_usec * 1E-6;
+}
 
 // Добавление нового узла в дерево
 struct rbtree *rbtree_add(struct rbtree *root, int key, char *value) { 
 	struct rbtree *node, *parent = NullNode;
 	
 	// Поиск листа для нового элемента. 
-	for (node = root; node != NullNode && node != NULL; )
-	{
+	for (node = root; node != NullNode && node != NULL; ){ 
 		parent = node;
 		if (key < node->key)
 			node = node->left;
@@ -90,9 +133,9 @@ struct rbtree *rbtree_add(struct rbtree *root, int key, char *value) {
 	node = malloc(sizeof(*node));
 	
 	// Проверка выделения памяти 
-	if (node == NULL)
+	if (node == NULL) 
 		return NULL;
-	
+
 	// Заполняем значения дерева	
 	node->key = key;
 	node->value = value;
@@ -179,30 +222,33 @@ struct rbtree *rbtree_fixup_add(struct rbtree *root, struct rbtree *node) {
 			}
 		}
 	}
-	
+	// Меняем цвет корня на черный (востанавливаем свойство)
 	root->color = COLOR_BLACK;
 	
 	return root;
 }
 
 // Левый поворот поддерева. 
+// Передаем текущий узел и дедушку
 struct rbtree *rbtree_left_rotate(struct rbtree *root, struct rbtree *node) {
-	
 	struct rbtree *right = node->right;
-	/* Create node->right link */
 	node->right = right->left;
+	
+	// Если левый существует
 	if (right->left != NullNode)
 		right->left->parent = node;
-		/* Create right->parent link */
-	if (right != NullNode)
+		// Создаем связь с родительским
+	if (right != NullNode) 
 		right->parent = node->parent;
+		// Создаем связь с родительским
 	if (node->parent != NullNode) {
+		// меняем местами
 		if (node == node->parent->left)
 			node->parent->left = right;
 		else
 			node->parent->right = right;
 	} else root = right;
-
+	// 
 	right->left = node;
 	if (node != NullNode)
 		node->parent = right;
@@ -211,13 +257,10 @@ struct rbtree *rbtree_left_rotate(struct rbtree *root, struct rbtree *node) {
 
 // Правый поворот поддерева. 
 struct rbtree *rbtree_right_rotate(struct rbtree *root, struct rbtree *node) {
-	
 	struct rbtree *left = node->left;
-	/* Create node->left link */
 	node->left = left->right;
 	if (left->right != NullNode)
 		left->right->parent = node;
-		/* Create left->parent link */
 	if (left != NullNode)
 		left->parent = node->parent;
 	if (node->parent != NullNode) {
@@ -231,4 +274,94 @@ struct rbtree *rbtree_right_rotate(struct rbtree *root, struct rbtree *node) {
 		node->parent = left;
 	return root;
 }
+
+// Поиск Минимального.
+struct rbtree *rbtree_min(struct rbtree *root) {
+	if (root == NullNode)
+		return NullNode; 
+	struct rbtree *min = root; 
+	while (min->left != NullNode)
+		min = min->left; 
+	return min;
+}
+
+// Поиск максимального
+struct rbtree *rbtree_max(struct rbtree *root) {
+	if (root == NullNode)
+		return NullNode; 
+	struct rbtree *max = root; 
+	while (max->right != NullNode)
+		max = max->right; 
+	return max;
+}
+
+// Удаление узла по ключу. 
+struct rbtree *rbtree_delete(struct rbtree *root, int key) {
+	
+	
+	
+	
+	return root; 
+}
+
+// Поиск элемента
+struct rbtree *rbtree_lookup(struct rbtree *root, int key) {
+	struct rbtree* search = NullNode;
+	
+	// Если дерево пустое
+	if (root == NullNode)
+		return NullNode; 
+	// Если значение совпало
+	else if (root->key == key)
+		return root; 
+	else if (root->key > key) 
+		search = rbtree_lookup(root->left, key);
+	else if (root->key < key) 
+		search = rbtree_lookup(root->right, key); 
+	return search; 
+}
+
+// Очистка памяти.
+void rbtree_free(struct rbtree *root){
+	// Рекурсивно запускается очистка 
+	if (root->right != NullNode)
+		rbtree_free(root->right);
+	if (root->left != NullNode)
+		rbtree_free(root->left);
+		free(root);
+}
+
+void graph_color_print (struct rbtree *root, FILE *inputfile) {
+	fprintf(inputfile, "%d", root->key);
+	if (root == NullNode) return; 
+	if (root->color == COLOR_RED) {
+		fprintf(inputfile, "[color=red]\n");
+	} else fprintf(inputfile, "[color=black]\n");
+	if (root->left != NullNode) {
+		graph_color_print(root->left,inputfile);
+		fprintf(inputfile, "%d -> %d\n", root->key, root->left->key);
+	} else {
+		
+		fprintf(inputfile, "null[color=black]\n%d -> null\n", root->key);
+	}
+	
+	if (root->right != NullNode) {
+		graph_color_print(root->right,inputfile);
+		fprintf(inputfile, "%d -> %d\n", root->key, root->right->key);
+	}else {
+		
+		fprintf(inputfile, "null[color=black]\n%d -> null\n", root->key);
+		}
+}
+
+void rbtree_print_dfs(struct rbtree *root, int level) {
+	//struct rbtree *node = root; 
+	FILE *inputfile;
+	char *name = "tree.dot"; 
+	inputfile = fopen(name, "w");
+	fprintf(inputfile, "digraph rbtree {\n");
+	graph_color_print (root, inputfile);
+	fprintf(inputfile, "}");
+}
+
 
