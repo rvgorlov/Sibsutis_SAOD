@@ -63,12 +63,20 @@ int main(int argc, char **argv){
 	tree = rbtree_add(tree, 6, "6");
 	tree = rbtree_add(tree, 8, "8");
 	tree = rbtree_add(tree, 9, "9");
+	
+	// ////////////////////////////////////
 	tree = rbtree_add(tree, 100, "100");
 	tree = rbtree_add(tree, -101, "-101");
 	tree = rbtree_add(tree, 2, "2");
 	tree = rbtree_add(tree, 7, "7");
 	tree = rbtree_add(tree, -2, "-2");
 	tree = rbtree_add(tree, -20, "-20");
+	tree = rbtree_add(tree, 23, "23");
+	tree = rbtree_add(tree, -1, "-1");
+	tree = rbtree_add(tree, 1, "1");
+	tree = rbtree_add(tree, 2, "2");
+	tree = rbtree_add(tree, 3, "3");
+	tree = rbtree_add(tree, 3, "3");
 	
 	printf("Тестируем поиск минимума и максимума\n\n");
 	temp = rbtree_min(tree); 
@@ -78,7 +86,13 @@ int main(int argc, char **argv){
 	printf("Корневой узел имеет ключ: %d \n", tree->key);
 	
 	printf("\nУдалим узел с ключем 100\n");
-	tree = rbtree_delete(tree, 100);
+	//tree = rbtree_delete(tree, 2);
+	//tree = rbtree_delete(tree, 10);
+	//tree = rbtree_delete(tree, -20);
+	//tree = rbtree_delete(tree, 11);
+	//tree = rbtree_delete(tree, 12);
+	//tree = rbtree_delete(tree, 3);
+	//tree = rbtree_delete(tree, 23);
 	if (tree == NullNode)
 		printf("После удаления элемента массив пуст");
 	else printf("После удаления элемента в массиве остались узлы");
@@ -224,7 +238,6 @@ struct rbtree *rbtree_fixup_add(struct rbtree *root, struct rbtree *node) {
 	}
 	// Меняем цвет корня на черный (востанавливаем свойство)
 	root->color = COLOR_BLACK;
-	
 	return root;
 }
 
@@ -285,7 +298,7 @@ struct rbtree *rbtree_min(struct rbtree *root) {
 	return min;
 }
 
-// Поиск максимального
+// Поиск Максимального
 struct rbtree *rbtree_max(struct rbtree *root) {
 	if (root == NullNode)
 		return NullNode; 
@@ -295,14 +308,75 @@ struct rbtree *rbtree_max(struct rbtree *root) {
 	return max;
 }
 
-// Функция востановления свойств карсно-черных деревьев 
+// Функция востановления свойств красно-черных деревьев 
 // после уаления. На вход подается дерево и узел.
 void RBTree_Delete_Fixup (struct rbtree *root, struct rbtree *x) {
 	
+	struct rbtree *w; 
 	
-	
-	
-}
+	while ((x != root) && (x->color == COLOR_BLACK)) {
+		if (x == x->parent->left) { 
+			w = x->parent->right;
+			// Если дядя красный
+			if (w->color == COLOR_RED) {// Случай 1
+				w->color = COLOR_BLACK;
+				x->parent->color = COLOR_RED; 
+				rbtree_left_rotate(root, x->parent);
+				w = x->parent->right; 
+			}
+			// Если оба черные
+			if ((w->left->color == COLOR_BLACK) && // Случай 2
+				(w->right->color == COLOR_BLACK)) {
+				w->color = COLOR_RED; 
+				x = x->parent; 
+			} else {
+				if (w->right->color == COLOR_BLACK) { // Случай 3
+					w->left->color = COLOR_BLACK; 
+					w->color = COLOR_RED; 
+					rbtree_right_rotate (root, w);
+					w = x->parent->right;
+				}
+				// Случай 4
+				w->color = x->parent->color; 
+				x->parent->color = COLOR_BLACK; 
+				w->right->color = COLOR_BLACK;
+				rbtree_left_rotate(root, x->parent); 
+				x = root;  
+			}
+			
+		} 
+		else { // Случаи 5-8
+			w = x->parent->left;
+			if (w->color == COLOR_RED) {// Случай 5
+				w->color = COLOR_BLACK;
+				x->parent->color = COLOR_RED; 
+				rbtree_right_rotate(root, x->parent);
+				w = x->parent->left; 
+			}
+			if ((w->right->color == COLOR_BLACK) && // Случай 6
+				(w->left->color == COLOR_BLACK)) {
+				w->color = COLOR_RED; 
+				x = x->parent; 
+			}
+			else { 
+				if (w->left->color == COLOR_BLACK) { // Случай 7
+					w->right->color = COLOR_BLACK; 
+					w->color = COLOR_RED; 
+					rbtree_left_rotate (root, w);
+					w = x->parent->left;
+				}
+				// Случай 8
+				w->color = x->parent->color; 
+				x->parent->color = COLOR_BLACK; 
+				w->left->color = COLOR_BLACK;
+				rbtree_right_rotate(root, x->parent); 
+				x = root;  
+			}
+		}	
+	}
+	x->color = COLOR_BLACK; 
+} 
+
 // Функция перемещения узлов
 // на вход передаем корень и два узла. 
 // Функция меняет местами u & V
@@ -310,11 +384,11 @@ void RBTree_Transplant(struct rbtree *root, struct rbtree *u, struct rbtree *v){
 	// Если u - корень
 	if (u->parent == NullNode)
 		root = v; 
-	else if (u->parent->left) // u - левое поддерево
+	else if (u == u->parent->left) // u - левое поддерево
 		u->parent->left = v; 
-	else u->parent->right = v; 
+	else u->parent->right = v; // u - правое поддерево 
 	// Меняем родителя
-	v->parent = u->parent; 
+	v->parent = u->parent;
 }
 
 // Удаление узла по ключу. 
@@ -338,7 +412,7 @@ struct rbtree *rbtree_delete(struct rbtree *root, int key) {
 		y_color = y->color; 
 		struct rbtree *x = y->right; 
 		
-		if (y->parent = z) 
+		if (y->parent == z) 
 			x->parent = y; 
 		else { 
 			RBTree_Transplant(root, y , y->right); 
@@ -350,7 +424,7 @@ struct rbtree *rbtree_delete(struct rbtree *root, int key) {
 	y->left->parent = y; 
 	y->color = z->color; 
 	}
-	if (y_color = COLOR_BLACK)
+	if (y_color == COLOR_BLACK)
 		RBTree_Delete_Fixup(root, x); 
 	return root; 
 }
@@ -374,6 +448,9 @@ struct rbtree *rbtree_lookup(struct rbtree *root, int key) {
 
 // Очистка памяти.
 void rbtree_free(struct rbtree *root){
+	// Проверка на пустое дерево
+	if (root == NULL || root == NullNode) 
+		return; 
 	// Рекурсивно запускается очистка 
 	if (root->right != NullNode)
 		rbtree_free(root->right);
@@ -408,6 +485,7 @@ void rbtree_print_dfs(struct rbtree *root, int level) {
 	fprintf(inputfile, "digraph rbtree {\nnode [style=filled,fontcolor=white]\n");
 	graph_color_print (root, inputfile);
 	fprintf(inputfile, "}");
+	popen("dot -Tpng tree.dot > tree.png","r");
 }
 
 

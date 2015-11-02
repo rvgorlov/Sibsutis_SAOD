@@ -1,29 +1,36 @@
 digraph rbtree {
 node [style=filled,fontcolor=white]
 8[color=black]
-5[color=black]
-2[color=red]
--20[color=black]
--101[color=red]
+2[color=black]
+-20[color=red]
+-101[color=black]
 null[color=black]
 -101 -> null
 null[color=black]
 -101 -> null
 -20 -> -101
+-1[color=black]
 -2[color=red]
 null[color=black]
 -2 -> null
 null[color=black]
 -2 -> null
--20 -> -2
+-1 -> -2
+1[color=red]
+null[color=black]
+1 -> null
+null[color=black]
+1 -> null
+-1 -> 1
+-20 -> -1
 2 -> -20
+5[color=red]
 3[color=black]
 null[color=black]
 3 -> null
 null[color=black]
 3 -> null
-2 -> 3
-5 -> 2
+5 -> 3
 6[color=black]
 null[color=black]
 6 -> null
@@ -34,7 +41,8 @@ null[color=black]
 7 -> null
 6 -> 7
 5 -> 6
-8 -> 5
+2 -> 5
+8 -> 2
 11[color=black]
 10[color=black]
 9[color=red]
@@ -46,15 +54,19 @@ null[color=black]
 null[color=black]
 10 -> null
 11 -> 10
-12[color=black]
+23[color=black]
+12[color=red]
 null[color=black]
 12 -> null
+null[color=black]
+12 -> null
+23 -> 12
 100[color=red]
 null[color=black]
 100 -> null
 null[color=black]
 100 -> null
-12 -> 100
-11 -> 12
+23 -> 100
+11 -> 23
 8 -> 11
 }
