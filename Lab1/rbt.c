@@ -74,9 +74,7 @@ int main(int argc, char **argv){
 	tree = rbtree_add(tree, 23, "23");
 	tree = rbtree_add(tree, -1, "-1");
 	tree = rbtree_add(tree, 1, "1");
-	tree = rbtree_add(tree, 2, "2");
-	tree = rbtree_add(tree, 3, "3");
-	tree = rbtree_add(tree, 3, "3");
+
 	
 	printf("Тестируем поиск минимума и максимума\n\n");
 	temp = rbtree_min(tree); 
@@ -87,12 +85,13 @@ int main(int argc, char **argv){
 	
 	printf("\nУдалим узел с ключем 100\n");
 	//tree = rbtree_delete(tree, 2);
-	//tree = rbtree_delete(tree, 10);
-	//tree = rbtree_delete(tree, -20);
-	//tree = rbtree_delete(tree, 11);
-	//tree = rbtree_delete(tree, 12);
-	//tree = rbtree_delete(tree, 3);
-	//tree = rbtree_delete(tree, 23);
+	tree = rbtree_delete(tree, 10);
+	tree = rbtree_delete(tree, -20);
+	tree = rbtree_delete(tree, 11);
+	tree = rbtree_delete(tree, 12);
+	tree = rbtree_delete(tree, 3);
+	tree = rbtree_delete(tree, 23);
+	tree = rbtree_delete(tree, 8);
 	if (tree == NullNode)
 		printf("После удаления элемента массив пуст");
 	else printf("После удаления элемента в массиве остались узлы");
@@ -370,7 +369,7 @@ void RBTree_Delete_Fixup (struct rbtree *root, struct rbtree *x) {
 				x->parent->color = COLOR_BLACK; 
 				w->left->color = COLOR_BLACK;
 				rbtree_right_rotate(root, x->parent); 
-				x = root;  
+				x = root;
 			}
 		}	
 	}
@@ -379,8 +378,8 @@ void RBTree_Delete_Fixup (struct rbtree *root, struct rbtree *x) {
 
 // Функция перемещения узлов
 // на вход передаем корень и два узла. 
-// Функция меняет местами u & V
-void RBTree_Transplant(struct rbtree *root, struct rbtree *u, struct rbtree *v){ 
+// Функция меняет местами u & v
+void RBTree_Transplant(struct rbtree *root, struct rbtree *u, struct rbtree *v) { 
 	// Если u - корень
 	if (u->parent == NullNode)
 		root = v; 
@@ -410,7 +409,7 @@ struct rbtree *rbtree_delete(struct rbtree *root, int key) {
 		// Если удаляемый имеет оба поддерева 
 		y = rbtree_min(z->right);
 		y_color = y->color; 
-		struct rbtree *x = y->right; 
+		x = y->right; 
 		
 		if (y->parent == z) 
 			x->parent = y; 
@@ -461,11 +460,15 @@ void rbtree_free(struct rbtree *root){
 
 // Пишем в файл все узлы и связи. 
 void graph_color_print (struct rbtree *root, FILE *inputfile) {
+	
+	// Пишем ключ
 	fprintf(inputfile, "%d", root->key);
 	if (root == NullNode) return; 
+	// Пишем цвет
 	if (root->color == COLOR_RED) {
 		fprintf(inputfile, "[color=red]\n");
 	} else fprintf(inputfile, "[color=black]\n");
+	// Пишем рекурсивно вместе с листьями
 	if (root->left != NullNode) {
 		graph_color_print(root->left,inputfile);
 		fprintf(inputfile, "%d -> %d\n", root->key, root->left->key);
@@ -483,6 +486,7 @@ void rbtree_print_dfs(struct rbtree *root, int level) {
 	
 	// Готовим файл в формате tree.dot
 	fprintf(inputfile, "digraph rbtree {\nnode [style=filled,fontcolor=white]\n");
+	// Вызов рекурсивной функции для написания всех узлов
 	graph_color_print (root, inputfile);
 	fprintf(inputfile, "}");
 	popen("dot -Tpng tree.dot > tree.png","r");
